@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bữa sáng ngẫu nhiên | Lucky Wheel</title>
+  <link rel="icon" type="image/png" href="assets/food-favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>🍜 Bữa sáng ngẫu nhiên</h1>
+        <p class="subtitle">Bấm "Quay" để chọn món nào.</p>
+        <button type="button" id="btnAddFromHeader" class="btn-header-action">
+          Thêm món
+        </button>
+      </header>
+
+      <main class="main">
+        <!-- Home view -->
+        <section
+          id="view-home"
+          class="view view-active"
+          aria-label="Trang danh sách món"
+        >
+          <section class="food-list-section">
+            <header class="section-header">
+              <div>
+                <h2>Danh sách món ăn</h2>
+                <p class="hint">
+                  Hiển thị tối đa 5 món gần nhất. Bấm xem thêm để xem toàn bộ.
+                </p>
+              </div>
+            </header>
+
+            <ul id="homeFoodList" class="food-list"></ul>
+
+            <div class="home-actions">
+              <button
+                type="button"
+                id="btnViewMore"
+                class="btn-secondary"
+                hidden
+              >
+                Xem thêm
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <!-- Add food view -->
+        <section id="view-add" class="view" aria-label="Trang thêm món">
+          <section class="card">
+            <header class="section-header">
+              <div>
+                <h2>Thêm món ăn</h2>
+                <p class="hint">
+                  Chỉ cần điền tên món, các thông tin khác có thể bổ sung sau.
+                </p>
+              </div>
+            </header>
+
+            <form id="addFoodForm" class="form">
+              <div class="form-group required">
+                <label for="fieldTitle">Tên món</label>
+                <input
+                  type="text"
+                  id="fieldTitle"
+                  name="title"
+                  maxlength="80"
+                  required
+                  placeholder="VD: Phở bò tái chín"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="fieldDescription">Mô tả</label>
+                <textarea
+                  id="fieldDescription"
+                  name="description"
+                  rows="3"
+                  placeholder="VD: Quán sạch, nước dùng thanh, mở từ 6h sáng."
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="fieldAddress">Địa chỉ</label>
+                <input
+                  type="text"
+                  id="fieldAddress"
+                  name="address"
+                  maxlength="160"
+                  placeholder="VD: 123 Lê Lợi, Q.1, TP.HCM"
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="fieldPriceMin">Giá từ</label>
+                  <input
+                    type="number"
+                    id="fieldPriceMin"
+                    name="priceMin"
+                    min="0"
+                    step="1000"
+                    placeholder="VD: 25000"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="fieldPriceMax">Đến</label>
+                  <input
+                    type="number"
+                    id="fieldPriceMax"
+                    name="priceMax"
+                    min="0"
+                    step="1000"
+                    placeholder="VD: 40000"
+                  />
+                </div>
+              </div>
+
+              <p
+                id="addFoodError"
+                class="form-error"
+                role="alert"
+                aria-live="polite"
+              ></p>
+
+              <div class="form-actions">
+                <button type="button" id="btnCancelAdd" class="btn-secondary">
+                  Hủy
+                </button>
+                <button type="submit" id="btnSaveFood" class="btn-primary">
+                  Lưu món
+                </button>
+              </div>
+            </form>
+          </section>
+        </section>
+
+        <!-- Wheel view -->
+        <section
+          id="view-wheel"
+          class="view"
+          aria-label="Trang chọn món ngẫu nhiên"
+        >
+          <section class="wheel-section">
+            <div class="wheel-wrapper">
+              <div class="wheel-pointer">▼</div>
+              <canvas
+                id="wheel"
+                width="420"
+                height="420"
+                aria-label="Bánh xe may mắn"
+              ></canvas>
+            </div>
+            <button type="button" id="spinBtn" class="btn-spin" disabled>
+              Quay
+            </button>
+          </section>
+        </section>
+      </main>
+
+      <!-- Floating random button -->
+      <button
+        type="button"
+        id="btnOpenWheel"
+        class="fab-random"
+        aria-label="Chọn đồ ăn ngẫu nhiên"
+      >
+        🎲
+      </button>
+
+      <!-- Popup result -->
+      <div id="resultModal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop"></div>
+        <div
+          class="modal-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="resultTitle"
+        >
+          <div class="modal-header">
+            <h2 id="resultTitle">Hôm nay ăn gì?</h2>
+          </div>
+          <div class="modal-body">
+            <p id="modalFoodTitle" class="modal-food-title"></p>
+            <p id="modalFoodDescription" class="modal-food-description"></p>
+            <p id="modalFoodAddress" class="modal-food-address"></p>
+            <p id="modalFoodPrice" class="modal-food-price"></p>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="btnCloseModal" class="btn-primary">
+              Ngon, chốt món này!
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>

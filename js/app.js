@@ -5,24 +5,65 @@
   const ITEMS_PER_PAGE = 10;
 
   const DEFAULT_FOODS = [
-    { id: "default-1", title: "Bánh canh", description: "", address: "", priceMin: null, priceMax: null },
-    { id: "default-2", title: "Cháo", description: "", address: "", priceMin: null, priceMax: null },
-    { id: "default-3", title: "Bún", description: "", address: "", priceMin: null, priceMax: null },
-    { id: "default-4", title: "Phở", description: "", address: "", priceMin: null, priceMax: null },
-    { id: "default-5", title: "Mì Quảng", description: "", address: "", priceMin: null, priceMax: null },
+    {
+      id: "default-1",
+      title: "Bánh canh",
+      description: "",
+      address: "",
+      priceMin: null,
+      priceMax: null,
+    },
+    {
+      id: "default-2",
+      title: "Cháo",
+      description: "",
+      address: "",
+      priceMin: null,
+      priceMax: null,
+    },
+    {
+      id: "default-3",
+      title: "Bún",
+      description: "",
+      address: "",
+      priceMin: null,
+      priceMax: null,
+    },
+    {
+      id: "default-4",
+      title: "Phở",
+      description: "",
+      address: "",
+      priceMin: null,
+      priceMax: null,
+    },
+    {
+      id: "default-5",
+      title: "Mì Quảng",
+      description: "",
+      address: "",
+      priceMin: null,
+      priceMax: null,
+    },
   ];
 
   const WHEEL_COLORS = [
     "#ee4d2d",
-    "#f05d40",
-    "#e85a3a",
-    "#d94a2a",
     "#7c3aed",
     "#2563eb",
     "#0d9488",
     "#16a34a",
     "#65a30d",
     "#ca8a04",
+    "#dc2626",
+    "#db2777",
+    "#0891b2",
+    "#6366f1",
+    "#f97316",
+    "#a855f7",
+    "#06b6d4",
+    "#84cc16",
+    "#f43f5e",
   ];
 
   const ICON_EDIT =
@@ -52,6 +93,7 @@
       wheel: document.getElementById("view-wheel"),
     },
     headerAddBtn: document.getElementById("btnAddFromHeader"),
+    btnBackToList: document.getElementById("btnBackToList"),
     fabOpenWheel: document.getElementById("btnOpenWheel"),
     homeFoodList: document.getElementById("homeFoodList"),
     homePagination: document.getElementById("homePagination"),
@@ -69,6 +111,7 @@
     modalFoodAddress: document.getElementById("modalFoodAddress"),
     modalFoodPrice: document.getElementById("modalFoodPrice"),
     btnCloseModal: document.getElementById("btnCloseModal"),
+    headerWheelTitle: document.querySelector(".header-wheel-title"),
   };
 
   if (!els.views.home || !els.wheelCanvas || !els.spinBtn) {
@@ -77,14 +120,18 @@
 
   const ctx = els.wheelCanvas.getContext("2d");
   const center = els.wheelCanvas.width / 2;
-  const radius = Math.min(els.wheelCanvas.width, els.wheelCanvas.height) / 2 - 10;
+  const radius =
+    Math.min(els.wheelCanvas.width, els.wheelCanvas.height) / 2 - 10;
   const paddingFromRim = 32;
-  const innerRadius = 45;
-  const textCenterRadius = radius - paddingFromRim - (radius - paddingFromRim - innerRadius) / 2;
-  const maxTextWidth = (radius - paddingFromRim - innerRadius) * 1.8;
+  const innerRadius = 50;
+  const textCenterRadius = (radius - paddingFromRim + innerRadius) / 2;
+  const bandWidth = radius - paddingFromRim - innerRadius;
+  const maxTextWidth = Math.max(40, bandWidth * 0.85);
 
   function createId() {
-    return "food-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    return (
+      "food-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+    );
   }
 
   function normalizeTitle(title) {
@@ -125,8 +172,16 @@
         v.classList.remove("view-active");
       }
     });
+    const app = document.querySelector(".app");
     if (name === "wheel") {
+      if (app) app.classList.add("is-wheel-view");
+      if (els.fabOpenWheel) els.fabOpenWheel.hidden = true;
+      if (els.headerWheelTitle) els.headerWheelTitle.hidden = false;
       drawWheel();
+    } else {
+      if (app) app.classList.remove("is-wheel-view");
+      if (els.fabOpenWheel) els.fabOpenWheel.hidden = false;
+      if (els.headerWheelTitle) els.headerWheelTitle.hidden = true;
     }
   }
 
@@ -162,7 +217,11 @@
     }
 
     const start = usePagination ? (listCurrentPage - 1) * ITEMS_PER_PAGE : 0;
-    const end = usePagination ? Math.min(start + ITEMS_PER_PAGE, foods.length) : (showAll ? foods.length : 5);
+    const end = usePagination
+      ? Math.min(start + ITEMS_PER_PAGE, foods.length)
+      : showAll
+        ? foods.length
+        : 5;
     const source = foods.slice(start, end);
 
     list.innerHTML = source
@@ -180,16 +239,24 @@
           <button type="button" class="food-item-btn btn-delete" aria-label="Xóa ${escapeHtml(item.title)}">${ICON_DELETE}</button>
         </div>
       </li>
-    `
+    `,
       )
       .join("");
 
     if (els.btnViewMore) {
       if (foods.length > 5) {
         els.btnViewMore.hidden = false;
-        els.btnViewMore.innerHTML = showAll ? ICON_CHEVRON_UP + "<span>Thu gọn</span>" : ICON_CHEVRON_DOWN + "<span>Xem thêm</span>";
-        els.btnViewMore.setAttribute("aria-label", showAll ? "Thu gọn" : "Xem thêm");
-        els.btnViewMore.setAttribute("data-tooltip", showAll ? "Thu gọn" : "Xem thêm");
+        els.btnViewMore.innerHTML = showAll
+          ? ICON_CHEVRON_UP + "<span>Thu gọn</span>"
+          : ICON_CHEVRON_DOWN + "<span>Xem thêm</span>";
+        els.btnViewMore.setAttribute(
+          "aria-label",
+          showAll ? "Thu gọn" : "Xem thêm",
+        );
+        els.btnViewMore.setAttribute(
+          "data-tooltip",
+          showAll ? "Thu gọn" : "Xem thêm",
+        );
       } else {
         els.btnViewMore.hidden = true;
       }
@@ -239,8 +306,10 @@
         els.addForm.title.value = food.title;
         els.addForm.description.value = food.description || "";
         els.addForm.address.value = food.address || "";
-        els.addForm.priceMin.value = food.priceMin != null ? String(food.priceMin) : "";
-        els.addForm.priceMax.value = food.priceMax != null ? String(food.priceMax) : "";
+        els.addForm.priceMin.value =
+          food.priceMin != null ? String(food.priceMin) : "";
+        els.addForm.priceMax.value =
+          food.priceMax != null ? String(food.priceMax) : "";
         if (els.btnSaveFood) {
           els.btnSaveFood.innerHTML = ICON_CHECK + "<span>Cập nhật món</span>";
           els.btnSaveFood.setAttribute("aria-label", "Cập nhật món");
@@ -335,14 +404,13 @@
 
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(midAngle + Math.PI / 2);
+      ctx.rotate(midAngle);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#1a1a1a";
       ctx.font = 'bold 14px "Be Vietnam Pro", sans-serif';
-      const label = foods[i].title || "";
+      const label = (foods[i].title || "").trim();
       let shortLabel = label;
-      ctx.font = 'bold 14px "Be Vietnam Pro", sans-serif';
       const metrics = ctx.measureText(label);
       if (metrics.width > maxTextWidth) {
         for (let len = label.length; len > 0; len--) {
@@ -372,7 +440,7 @@
   function openResultModal(food) {
     if (!food || !els.modal) return;
     els.modalFoodTitle.textContent = food.title;
-    els.modalFoodDescription.textContent = food.description || "Không có mô tả.";
+    els.modalFoodDescription.textContent = food.description || "";
     els.modalFoodAddress.textContent = food.address ? `📍 ${food.address}` : "";
     const priceText = formatPrice(food.priceMin, food.priceMax);
     els.modalFoodPrice.textContent = priceText ? `💰 ${priceText}` : "";
@@ -384,6 +452,7 @@
     if (!els.modal) return;
     els.modal.classList.remove("modal-open");
     els.modal.setAttribute("aria-hidden", "true");
+    showView("home");
   }
 
   function spin() {
@@ -396,7 +465,8 @@
     const pointerAngle = Math.PI / 2;
     const targetRotation = pointerAngle - (winnerIndex + 0.5) * segmentAngle;
     const fullSpins = 4 * 2 * Math.PI;
-    const totalRotation = fullSpins + targetRotation - (currentRotation % (2 * Math.PI));
+    const totalRotation =
+      fullSpins + targetRotation - (currentRotation % (2 * Math.PI));
     const startRotation = currentRotation;
     const startTime = performance.now();
     const durationMs = 4500;
@@ -463,7 +533,14 @@
     if (editingFoodId) {
       const idx = foods.findIndex((f) => f.id === editingFoodId);
       if (idx !== -1) {
-        foods[idx] = { ...foods[idx], title, description, address, priceMin, priceMax };
+        foods[idx] = {
+          ...foods[idx],
+          title,
+          description,
+          address,
+          priceMin,
+          priceMax,
+        };
       }
     } else {
       foods.unshift({
@@ -506,6 +583,12 @@
       });
     }
 
+    if (els.btnBackToList) {
+      els.btnBackToList.addEventListener("click", function () {
+        showView("home");
+      });
+    }
+
     if (els.fabOpenWheel) {
       els.fabOpenWheel.addEventListener("click", function () {
         showView("wheel");
@@ -536,10 +619,14 @@
       });
     }
 
-    if (els.btnCloseModal) els.btnCloseModal.addEventListener("click", closeResultModal);
+    if (els.btnCloseModal)
+      els.btnCloseModal.addEventListener("click", closeResultModal);
     if (els.modal) {
       els.modal.addEventListener("click", function (e) {
-        if (e.target === els.modal || e.target.classList.contains("modal-backdrop")) {
+        if (
+          e.target === els.modal ||
+          e.target.classList.contains("modal-backdrop")
+        ) {
           closeResultModal();
         }
       });

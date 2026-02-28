@@ -1,4 +1,0 @@
-# Cloudflare Pages - Deploy thư mục hiện tại (static site)
-# Chạy: npx wrangler pages deploy . --project-name=breakfast-rng
-name = "breakfast-rng"
-pages_build_output_dir = "."

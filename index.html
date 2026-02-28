@@ -3,8 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ee4d2d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Bữa sáng" />
     <title>Bữa sáng ngẫu nhiên</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="apple-touch-icon" href="assets/favicon.svg" />
+    <link rel="manifest" href="manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,6 +39,19 @@
               </svg>
               <span>Bữa sáng ngẫu nhiên</span>
             </div>
+            <button
+              type="button"
+              id="btnAddToHome"
+              class="btn-add-to-home"
+              data-tooltip="Thêm ứng dụng trên màn hình"
+              data-tooltip-position="bottom"
+              aria-label="Thêm ứng dụng trên màn hình"
+            >
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+              </svg>
+              <span>Thêm trên màn hình</span>
+            </button>
             <button
               type="button"
               id="btnBackToList"
@@ -351,6 +370,22 @@
               </svg>
               <span>Ngon, chốt món này!</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal hướng dẫn thêm trên màn hình (iOS) -->
+      <div id="installModal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="installModalTitle">
+          <div class="modal-header">
+            <h2 id="installModalTitle">Thêm trên màn hình</h2>
+          </div>
+          <div class="modal-body install-instructions">
+            <p>Bấm nút <strong>Chia sẻ</strong> (biểu tượng mũi tên lên trong ô vuông) ở thanh dưới Safari, sau đó chọn <strong>Thêm vào Màn hình chính</strong>.</p>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="btnCloseInstallModal" class="btn-primary">Đã hiểu</button>
           </div>
         </div>
       </div>

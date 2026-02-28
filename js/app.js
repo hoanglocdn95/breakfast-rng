@@ -112,6 +112,9 @@
     modalFoodPrice: document.getElementById("modalFoodPrice"),
     btnCloseModal: document.getElementById("btnCloseModal"),
     headerWheelTitle: document.querySelector(".header-wheel-title"),
+    btnAddToHome: document.getElementById("btnAddToHome"),
+    installModal: document.getElementById("installModal"),
+    btnCloseInstallModal: document.getElementById("btnCloseInstallModal"),
   };
 
   if (!els.views.home || !els.wheelCanvas || !els.spinBtn) {
@@ -174,14 +177,20 @@
     });
     const app = document.querySelector(".app");
     if (name === "wheel") {
-      if (app) app.classList.add("is-wheel-view");
+      if (app) {
+        app.classList.add("is-wheel-view");
+        app.classList.remove("is-home-view");
+      }
       if (els.fabOpenWheel) els.fabOpenWheel.hidden = true;
       if (els.headerWheelTitle) els.headerWheelTitle.hidden = false;
       drawWheel();
     } else {
-      if (app) app.classList.remove("is-wheel-view");
-      if (els.fabOpenWheel) els.fabOpenWheel.hidden = false;
+      if (app) {
+        app.classList.remove("is-wheel-view");
+        app.classList.toggle("is-home-view", name === "home");
+      }
       if (els.headerWheelTitle) els.headerWheelTitle.hidden = true;
+      if (els.fabOpenWheel) els.fabOpenWheel.hidden = name !== "home";
     }
   }
 
@@ -446,6 +455,28 @@
     els.modalFoodPrice.textContent = priceText ? `💰 ${priceText}` : "";
     els.modal.classList.add("modal-open");
     els.modal.setAttribute("aria-hidden", "false");
+    playSuccessSound();
+  }
+
+  function playSuccessSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const playTone = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.15, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      playTone(523.25, 0, 0.15);
+      playTone(659.25, 0.12, 0.15);
+      playTone(783.99, 0.24, 0.25);
+    } catch (_) {}
   }
 
   function closeResultModal() {
@@ -633,7 +664,13 @@
     }
 
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") closeResultModal();
+      if (e.key === "Escape") {
+        closeResultModal();
+        if (els.installModal && els.installModal.classList.contains("modal-open")) {
+          els.installModal.classList.remove("modal-open");
+          els.installModal.setAttribute("aria-hidden", "true");
+        }
+      }
     });
 
     if (els.wheelCanvas && els.wheelTooltip) {
@@ -649,6 +686,66 @@
       });
       els.wheelCanvas.addEventListener("mouseleave", hideWheelTooltip);
     }
+
+    initAddToHome();
+  }
+
+  function initAddToHome() {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true ||
+      document.referrer.includes("android-app://");
+
+    if (isStandalone && els.btnAddToHome) {
+      els.btnAddToHome.style.display = "none";
+      return;
+    }
+
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    if (els.btnAddToHome) {
+      els.btnAddToHome.addEventListener("click", function () {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(() => {
+            deferredPrompt = null;
+          });
+        } else {
+          const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          if (isIOS && els.installModal) {
+            els.installModal.classList.add("modal-open");
+            els.installModal.setAttribute("aria-hidden", "false");
+          }
+        }
+      });
+    }
+
+    if (els.btnCloseInstallModal && els.installModal) {
+      els.btnCloseInstallModal.addEventListener("click", function () {
+        els.installModal.classList.remove("modal-open");
+        els.installModal.setAttribute("aria-hidden", "true");
+      });
+      els.installModal.addEventListener("click", function (e) {
+        if (
+          e.target === els.installModal ||
+          e.target.classList.contains("modal-backdrop")
+        ) {
+          els.installModal.classList.remove("modal-open");
+          els.installModal.setAttribute("aria-hidden", "true");
+        }
+      });
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
   }
 
   loadFoods();
@@ -656,4 +753,12 @@
   updateSpinButton();
   drawWheel();
   initEvents();
+
+  const appEl = document.querySelector(".app");
+  if (appEl && els.views.home?.classList.contains("view-active")) {
+    appEl.classList.add("is-home-view");
+  }
+  if (appEl && !els.views.home?.classList.contains("view-active")) {
+    if (els.fabOpenWheel) els.fabOpenWheel.hidden = true;
+  }
 })();

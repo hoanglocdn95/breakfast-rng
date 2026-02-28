@@ -107,6 +107,12 @@ body {
 .app.is-wheel-view .btn-header-back {
   display: inline-flex;
 }
+.app.is-wheel-view .btn-add-to-home {
+  display: none;
+}
+.app:not(.is-home-view) .fab-random {
+  display: none !important;
+}
 .header-wheel-title {
   font-weight: 700;
   font-size: 1.1rem;
@@ -347,6 +353,37 @@ body {
   margin: 0 0 1rem;
   color: var(--text-muted);
   font-size: 0.875rem;
+}
+
+.btn-add-to-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--header-text);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 0.35rem 0.65rem;
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-add-to-home:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.02);
+}
+.btn-add-to-home .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.install-instructions p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
 }
 
 .food-list-scroll {
@@ -737,6 +774,13 @@ body {
   }
   .btn-header-action {
     padding: 0.5rem 0.75rem;
+  }
+
+  .btn-add-to-home span {
+    display: none;
+  }
+  .btn-add-to-home {
+    padding: 0.35rem 0.5rem;
   }
 
   .form-row {

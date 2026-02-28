@@ -1,0 +1,18 @@
+{
+  "name": "Bữa sáng ngẫu nhiên",
+  "short_name": "Bữa sáng",
+  "description": "Chọn món ăn ngẫu nhiên bằng bánh xe may mắn",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fef8f5",
+  "theme_color": "#ee4d2d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

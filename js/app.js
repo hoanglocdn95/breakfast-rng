@@ -1,8 +1,9 @@
 "use strict";
 
 (function () {
-  const STORAGE_KEY = "breakfast-rng-foods-v2";
   const ITEMS_PER_PAGE = 10;
+  const API_BASE_URL =
+    "https://script.google.com/macros/s/AKfycbxFogKlCcve109Q8p260uxF6ut5zZUJJrRN606VgdnWFRrn0Pi_xpVPZek2_aKO3wPO/exec";
 
   const DEFAULT_FOODS = [
     {
@@ -115,6 +116,7 @@
     btnAddToHome: document.getElementById("btnAddToHome"),
     installModal: document.getElementById("installModal"),
     btnCloseInstallModal: document.getElementById("btnCloseInstallModal"),
+    loadingOverlay: document.getElementById("globalLoading"),
   };
 
   if (!els.views.home || !els.wheelCanvas || !els.spinBtn) {
@@ -142,27 +144,94 @@
   }
 
   function loadFoods() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          foods = parsed;
-        } else {
-          foods = [...DEFAULT_FOODS];
-        }
-      } else {
-        foods = [...DEFAULT_FOODS];
-      }
-    } catch (_) {
-      foods = [...DEFAULT_FOODS];
+    // Dữ liệu mặc định tạm thời khi chưa gọi được server
+    foods = [...DEFAULT_FOODS];
+
+    // Sau đó đồng bộ từ server (Google Sheet)
+    if (API_BASE_URL) {
+      setLoading(true);
+      fetch(`${API_BASE_URL}?action=list`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json || !json.ok || !Array.isArray(json.data)) return;
+          foods = json.data.map((item) => ({
+            id: item.id || createId(),
+            title: item.title || "",
+            description: item.description || "",
+            address: item.address || "",
+            priceMin:
+              item.priceMin === "" || item.priceMin == null
+                ? null
+                : Number(item.priceMin),
+            priceMax:
+              item.priceMax === "" || item.priceMax == null
+                ? null
+                : Number(item.priceMax),
+          }));
+          renderHomeList(false);
+          updateSpinButton();
+          drawWheel();
+        })
+        .catch(() => {
+          // ignore lỗi mạng, dùng dữ liệu mặc định
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
   }
 
   function saveFoods() {
+    // Không dùng localStorage nữa; dữ liệu chính nằm ở Google Sheet
+  }
+
+  function setLoading(isLoading) {
+    if (!els.loadingOverlay) return;
+    if (isLoading) {
+      els.loadingOverlay.classList.add("visible");
+      els.loadingOverlay.setAttribute("aria-hidden", "false");
+    } else {
+      els.loadingOverlay.classList.remove("visible");
+      els.loadingOverlay.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function postToApi(action, payload, options = {}) {
+    const { showLoading = false } = options;
+    if (!API_BASE_URL) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(foods));
-    } catch (_) {}
+      if (showLoading) setLoading(true);
+      fetch(API_BASE_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action,
+          ...payload,
+        }),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json || json.ok) return;
+          // Server có lỗi logic (validate, v.v.)
+          window.alert(
+            (payload && payload.title
+              ? `Không thể lưu món \"${payload.title}\" lên server.`
+              : "Không thể đồng bộ dữ liệu lên server.") +
+              (json.error ? `\n\nChi tiết: ${json.error}` : ""),
+          );
+        })
+        .catch(() => {
+          // Lỗi mạng: thông báo nhẹ nhàng
+          window.alert(
+            "Không thể kết nối server Google Sheet.\nDữ liệu vừa thao tác có thể chưa được lưu.",
+          );
+        })
+        .finally(() => {
+          if (showLoading) setLoading(false);
+        });
+    } catch (_) {
+      // ignore
+      if (showLoading) setLoading(false);
+    }
   }
 
   function showView(name) {
@@ -338,6 +407,7 @@
         if (!ok) return;
         foods = foods.filter((f) => f.id !== id);
         saveFoods();
+        postToApi("delete", { id }, { showLoading: true });
         renderHomeList(showAll);
         updateSpinButton();
         drawWheel();
@@ -574,8 +644,9 @@
         };
       }
     } else {
+      const newId = createId();
       foods.unshift({
-        id: createId(),
+        id: newId,
         title,
         description,
         address,
@@ -584,6 +655,34 @@
       });
     }
     saveFoods();
+
+    // Đồng bộ lên Google Sheet (không chặn UI)
+    if (editingFoodId) {
+      postToApi(
+        "update",
+        {
+          id: editingFoodId,
+          title,
+          description,
+          address,
+          priceMin,
+          priceMax,
+        },
+        { showLoading: true },
+      );
+    } else {
+      postToApi(
+        "create",
+        {
+          title,
+          description,
+          address,
+          priceMin,
+          priceMax,
+        },
+        { showLoading: true },
+      );
+    }
 
     form.reset();
     els.addError.textContent = "";
@@ -666,7 +765,10 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         closeResultModal();
-        if (els.installModal && els.installModal.classList.contains("modal-open")) {
+        if (
+          els.installModal &&
+          els.installModal.classList.contains("modal-open")
+        ) {
           els.installModal.classList.remove("modal-open");
           els.installModal.setAttribute("aria-hidden", "true");
         }

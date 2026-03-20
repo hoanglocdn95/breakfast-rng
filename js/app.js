@@ -143,6 +143,60 @@
     return title.trim().toLowerCase();
   }
 
+  function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, {
+      ...options,
+      signal: controller.signal,
+    }).finally(() => {
+      clearTimeout(timer);
+    });
+  }
+
+  function tryLoadFoodsFromServer(attempt = 1) {
+    const maxAttempts = 3;
+    return fetchWithTimeout(
+      `${API_BASE_URL}?action=list&ts=${Date.now()}`,
+      {
+        cache: "no-store",
+      },
+      12000,
+    )
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((json) => {
+        if (!json || !json.ok || !Array.isArray(json.data)) {
+          throw new Error("Invalid server response");
+        }
+        foods = json.data.map((item) => ({
+          id: item.id || createId(),
+          title: item.title || "",
+          description: item.description || "",
+          address: item.address || "",
+          priceMin:
+            item.priceMin === "" || item.priceMin == null
+              ? null
+              : Number(item.priceMin),
+          priceMax:
+            item.priceMax === "" || item.priceMax == null
+              ? null
+              : Number(item.priceMax),
+        }));
+      })
+      .catch((err) => {
+        if (attempt >= maxAttempts) throw err;
+        const waitMs = attempt * 800;
+        return new Promise((resolve) => {
+          setTimeout(resolve, waitMs);
+        }).then(() => tryLoadFoodsFromServer(attempt + 1));
+      });
+  }
+
   function loadFoods() {
     // Dữ liệu mặc định tạm thời khi chưa gọi được server
     foods = [...DEFAULT_FOODS];
@@ -150,24 +204,8 @@
     // Sau đó đồng bộ từ server (Google Sheet)
     if (API_BASE_URL) {
       setLoading(true);
-      fetch(`${API_BASE_URL}?action=list`)
-        .then((res) => res.json())
-        .then((json) => {
-          if (!json || !json.ok || !Array.isArray(json.data)) return;
-          foods = json.data.map((item) => ({
-            id: item.id || createId(),
-            title: item.title || "",
-            description: item.description || "",
-            address: item.address || "",
-            priceMin:
-              item.priceMin === "" || item.priceMin == null
-                ? null
-                : Number(item.priceMin),
-            priceMax:
-              item.priceMax === "" || item.priceMax == null
-                ? null
-                : Number(item.priceMax),
-          }));
+      tryLoadFoodsFromServer()
+        .then(() => {
           renderHomeList(false);
           updateSpinButton();
           drawWheel();
@@ -793,60 +831,29 @@
   }
 
   function initAddToHome() {
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone === true ||
-      document.referrer.includes("android-app://");
-
-    if (isStandalone && els.btnAddToHome) {
-      els.btnAddToHome.style.display = "none";
-      return;
-    }
-
-    let deferredPrompt = null;
-
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
-
+    // Theo yêu cầu: không dùng PWA/SW để tránh mọi cache không cần thiết.
     if (els.btnAddToHome) {
-      els.btnAddToHome.addEventListener("click", function () {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(() => {
-            deferredPrompt = null;
-          });
-        } else {
-          const isIOS =
-            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-          if (isIOS && els.installModal) {
-            els.installModal.classList.add("modal-open");
-            els.installModal.setAttribute("aria-hidden", "false");
-          }
-        }
-      });
-    }
-
-    if (els.btnCloseInstallModal && els.installModal) {
-      els.btnCloseInstallModal.addEventListener("click", function () {
-        els.installModal.classList.remove("modal-open");
-        els.installModal.setAttribute("aria-hidden", "true");
-      });
-      els.installModal.addEventListener("click", function (e) {
-        if (
-          e.target === els.installModal ||
-          e.target.classList.contains("modal-backdrop")
-        ) {
-          els.installModal.classList.remove("modal-open");
-          els.installModal.setAttribute("aria-hidden", "true");
-        }
-      });
+      els.btnAddToHome.style.display = "none";
     }
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          return Promise.all(
+            registrations.map((registration) => registration.unregister()),
+          );
+        })
+        .catch(() => {});
+    }
+
+    if ("caches" in window) {
+      window.caches
+        .keys()
+        .then((cacheNames) =>
+          Promise.all(cacheNames.map((cacheName) => window.caches.delete(cacheName))),
+        )
+        .catch(() => {});
     }
   }
 

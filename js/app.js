@@ -851,7 +851,9 @@
       window.caches
         .keys()
         .then((cacheNames) =>
-          Promise.all(cacheNames.map((cacheName) => window.caches.delete(cacheName))),
+          Promise.all(
+            cacheNames.map((cacheName) => window.caches.delete(cacheName)),
+          ),
         )
         .catch(() => {});
     }
